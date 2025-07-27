@@ -1,0 +1,73 @@
+@startuml C4 Level 2
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title C4 Level 2: Container Diagram - Digital Marketplace
+
+Person(buyer, "Buyer", "Customer who browses and purchases products")
+Person(seller, "Seller", "Vendor managing products and approving fulfillment")
+
+System_Boundary(system, "Digital Marketplace") {
+
+    Container(web, "Web Frontend", "React", "UI for buyers and sellers")
+
+    Boundary(azure, "Azure Infrastructure") {
+
+        Container(appGateway, "Application Gateway", "Azure Application Gateway", "Provides SSL termination, routing, and WAF")
+
+        Boundary(apps, "Azure Container Apps") {
+            Container(api, "Backend API", ".NET Modular Monolith", "Processes orders, payments, fulfillment, and catalog operations")
+            Container(workflow, "Workflow Orchestrator", "Temporal", "Manages long-running workflows (order and shipping)")
+            Container(auth, "Identity Provider", "Keycloak", "Handles user authentication and authorization")
+        }
+
+        Boundary(data, "Data Storage") {
+            ContainerDb(dbOrders, "Orders DB", "Azure SQL", "Stores order information")
+            ContainerDb(dbCatalog, "Catalog DB", "Azure SQL", "Stores product catalog")
+            ContainerDb(dbUsers, "Users DB", "Azure SQL", "Stores user profiles")
+            ContainerDb(dbPayments, "Payments DB", "Azure SQL", "Stores payment transactions")
+            ContainerDb(dbShipments, "Shipments DB", "Azure SQL", "Stores shipment and tracking info")
+            ContainerDb(dbNotifications, "Notifications DB", "Azure SQL", "Stores notification logs")
+        }
+
+        Boundary(cloudServices, "Azure Cloud Services") {
+            Container(keyVault, "Key Vault", "Azure Key Vault", "Stores secrets, API keys, and certificates securely")
+            Container(config, "App Configuration", "Azure App Configuration", "Manages feature flags and app settings centrally")
+        }
+
+        ContainerDb(cassandra, "Temporal DB", "Cassandra", "Stores workflow and event history for Temporal")
+    }
+
+}
+
+System_Ext(payment, "Payment Service Provider", "External system that processes card transactions")
+System_Ext(logistics, "Logistics Partner API", "External system handling shipping and delivery")
+System_Ext(notification, "Notification Service", "External service sending emails/SMS alerts")
+
+Rel(buyer, web, "Uses")
+Rel(seller, web, "Uses")
+
+Rel(web, appGateway, "Sends HTTPS requests")
+Rel(appGateway, api, "Routes API calls")
+
+Rel(api, dbOrders, "Reads/Writes")
+Rel(api, dbCatalog, "Reads/Writes")
+Rel(api, dbUsers, "Reads/Writes")
+Rel(api, dbPayments, "Reads/Writes")
+Rel(api, dbShipments, "Reads/Writes")
+Rel(api, dbNotifications, "Reads/Writes")
+
+Rel(api, keyVault, "Retrieves secrets")
+Rel(api, config, "Reads settings")
+Rel(api, workflow, "Triggers workflows")
+Rel(workflow, api, "Executes activities")
+Rel(workflow, cassandra, "Stores workflow state")
+
+Rel(api, auth, "Validates tokens / fetches roles")
+Rel(api, payment, "Initiates and receives payment updates")
+Rel(api, logistics, "Handles shipping & tracking")
+Rel(api, notification, "Sends notifications")
+Rel(notification, buyer, "Notifies buyer")
+Rel(notification, seller, "Notifies seller")
+
+SHOW_LEGEND()
+@enduml
